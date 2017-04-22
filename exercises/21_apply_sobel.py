@@ -6,12 +6,12 @@ import matplotlib.image as mpimg
 import helper
 
 # %% sobel threshold function
-def abs_sobel_thresh(img, orient='x', threshold=(0, 255)):
+def abs_sobel_thresh(img, orient='x', sobel_kernel=3, threshold=(0, 255)):
     # 1. take derivate in x or y depending on orient
     if orient == 'x':
-        sobel = cv2.Sobel(img, cv2.CV_64F, 1, 0)
+        sobel = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=sobel_kernel)
     if orient == 'y':
-        sobel = cv2.Sobel(img, cv2.CV_64F, 0, 1)
+        sobel = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=sobel_kernel)
     # 2. get absolute
     abs_sobel = np.absolute(sobel)
     # 3. scale 8-bit and convert to np.uint8
