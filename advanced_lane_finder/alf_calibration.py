@@ -5,7 +5,7 @@ import pickle
 import matplotlib.image as mpimg
 import numpy as np
 
-import alf_constants as consts
+import advanced_lane_finder.alf_constants as consts
 
 class CameraCalibration:
 
@@ -22,13 +22,13 @@ class CameraCalibration:
 
         self.__load_calibration_images()
 
-    def __load_calibration_images():
+    def __load_calibration_images(self):
         if os.path.exists(self.import_folder):
             for img_path in glob.glob(os.path.join(self.import_folder, self.import_files)):
                 # load image
                 img = mpimg.imread(img_path)
                 # append to list
-                self.calibration_images.append(gray)
+                self.calibration_images.append(img)
 
     def calibrate_camera(self, obj_point=consts.DEFAULT_OBJECT_POINT,
                                criteria=consts.DEFAULT_SUB_PIX_CRITERIA,
@@ -46,45 +46,58 @@ class CameraCalibration:
             ret, corners = cv2.findChessboardCorners(img, obj_point, None)
             # if corners found
             if ret == True:
+                # for debuggin & writeup
+                if self.export_calibrated:
+                    cv2.drawChessboardCorners(img, obj_point, corners, ret)
+                    mpimg.imsave(consts.CAL_IMG_EXPORT_NAME.format('chessboard_corners',idx), img, format='png')
+
                 # refine corner positions
-                corners = cv2.cornerSubPix(img, corners, win_size, zero_zone, criteria)
+                corners = cv2.cornerSubPix(gray, corners, win_size, zero_zone, criteria)
 
                 # for debuggin & writeup
                 if self.export_calibrated:
                     cv2.drawChessboardCorners(img, obj_point, corners, ret)
-                    plt.imsave(consts.CAL_IMG_EXPORT_NAME.format('chessboard_corners',idx))
+                    mpimg.imsave(consts.CAL_IMG_EXPORT_NAME.format('chessboard_corners_refined',idx), img, format='png')
 
                 # append to lists
                 self.object_points.append(obj_pt_template)
-                self.image_points(corners)
+                self.image_points.append(corners)
+
+            del idx, img, corners
 
         # calibrate
         ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(self.object_points, self.image_points, gray.shape[::-1], None, None)
         self.calibration_matrix = mtx
         self.distortion_coefficient = dist
-        self.image_size = img.shape
+        self.image_size = gray.shape
 
         if self.export_calibrated:
             for idx, img in enumerate(self.calibration_images):
                 destination = cv2.undistort(img, mtx, dist)
-                plt.imsave(consts.CAL_IMG_EXPORT_NAME.format('undistorted', idx))
+                mpimg.imsave(consts.CAL_IMG_EXPORT_NAME.format('undistorted', idx), destination, format='png')
+                del idx, img, destination
 
 
     def save_calibration(self, force=False):
         settings_pickle_path = os.path.join(consts.SETTINGS_FOLDER, consts.SETTINGS_PICKLE)
         if os.path.exists(consts.SETTINGS_FOLDER):
-            with open(settings_pickle_path, 'wb') as f:
-                pickle_dict = pickle.load(f)
-                if consts.KEY_OBJECT_POINTS not in pickle_dict or force
-                    or consts.KEY_IMAGE_POINTS not in pickle_dict
-                    or consts.KEY_IMAGE_SIZE not in pickle_dict
-                    or consts.DISTORTION_COEFFICIENT not in pickle_dict
-                    or consts.CALIBRATION_MATRIX not in pickle_dict:
+            pickle_dict = dict()
+            do_save = True
+            # only check when file exists
+            if os.path.exists(settings_pickle_path):
+                # have to open it as 'read-binary' for pickle.load()
+                with open(settings_pickle_path, 'rb') as i:
+                    pickle_dict = pickle.load(i)
+                    for key in pickle_dict.keys():
+                        if key in consts.KEY_LIST:
+                            do_save = force
 
-                    pickle_dict[consts.OBJECT_POINTS] = self.object_points
-                    pickle_dict[consts.IMAGE_POINTS] = self.image_points
-                    pickle_dict[consts.DISTORTION_COEFFICIENT] = self.distortion_coefficient
-                    pickle_dict[consts.CALIBRATION_MATRIX] = self.calibration_matrix
-                    pickle_dict[consts.IMAGE_SIZE] = self.image_size
+            if do_save:
+                with open(settings_pickle_path, 'wb') as f:
+                    pickle_dict[consts.KEY_OBJECT_POINTS] = self.object_points
+                    pickle_dict[consts.KEY_IMAGE_POINTS] = self.image_points
+                    pickle_dict[consts.KEY_DISTORTION_COEFFICIENT] = self.distortion_coefficient
+                    pickle_dict[consts.KEY_CALIBRATION_MATRIX] = self.calibration_matrix
+                    pickle_dict[consts.KEY_IMAGE_SIZE] = self.image_size
 
-                    pickle.dump(pickle_dict)
+                    pickle.dump(pickle_dict, f)
