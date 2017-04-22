@@ -57,4 +57,6 @@ cv2.imwrite('./images/calibration2_undist.jpg', dest)
 dist_pickle = dict()
 dist_pickle['objpoints'] = obj_points
 dist_pickle['imgpoints'] = img_points
+dist_pickle['mtx'] = mtx
+dist_pickle['dist'] = dist
 pickle.dump(dist_pickle, open('../camera_cal/dist_pickle.p', 'wb'))
