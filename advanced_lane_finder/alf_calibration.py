@@ -8,19 +8,20 @@ import numpy as np
 import advanced_lane_finder.alf_constants as consts
 
 class CameraCalibration:
-
     def __init__(self, import_folder=consts.CALIBRATION_IMAGE_FOLDER,
                  import_files=consts.CALIBRATION_IMAGE_TEMPLATE, export=False):
         self.export_calibrated = export
         self.import_folder = import_folder
         self.import_files = import_files
 
+        self.__init_values()
+        self.__load_calibration_images()
+
+    def __init_values(self):
         # init lists etc.
         self.calibration_images = list()
         self.object_points = list()
         self.image_points = list()
-
-        self.__load_calibration_images()
 
     def __load_calibration_images(self):
         if os.path.exists(self.import_folder):
@@ -63,13 +64,13 @@ class CameraCalibration:
                 self.object_points.append(obj_pt_template)
                 self.image_points.append(corners)
 
-            del idx, img, corners
+            del idx, corners
 
         # calibrate
         ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(self.object_points, self.image_points, gray.shape[::-1], None, None)
         self.calibration_matrix = mtx
         self.distortion_coefficient = dist
-        self.image_size = gray.shape
+        self.image_size = img.shape
 
         if self.export_calibrated:
             for idx, img in enumerate(self.calibration_images):

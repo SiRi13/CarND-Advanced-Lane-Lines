@@ -3,8 +3,8 @@ import cv2
 """
 image settings
 """
-IMAGE_SIZE=(1280, 720)
-WARPED_IMAGE_SIZE=(600, 500)
+IMAGE_SIZE = 1280, 720
+WARPED_SIZE = 500, 600
 
 """
 path & filename settings
@@ -21,12 +21,14 @@ CHALLENGE_VIDEO = './challenge_video.mp4'
 HARDER_CHALLENGE_VIDEO = './harder_challenge_video.mp4'
 
 """
-calibration settings
+calibration & transformation settings
 """
-DEFAULT_OBJECT_POINT = (9, 6)
+DEFAULT_OBJECT_POINT = 9, 6
 DEFAULT_SUB_PIX_CRITERIA = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-DEFAULT_SUB_PIX_WIN_SIZE = (5, 5)
-DEFAULT_SUB_PIX_ZERO_ZONE = (-1, 1)
+DEFAULT_SUB_PIX_WIN_SIZE = 11, 11
+DEFAULT_SUB_PIX_ZERO_ZONE = -1, 1
+DEFAULT_LANE_LINES_DISTANCE_PX = 1000
+LANE_WIDTH_M = 3.7
 
 """
 keys for settings pickle
@@ -37,7 +39,9 @@ KEY_IMAGE_SIZE = 'image_size'
 KEY_DISTORTION_COEFFICIENT = 'distortion_coefficient'
 KEY_CALIBRATION_MATRIX = 'calibration_matrix'
 KEY_TRANSFORMATION_MATRIX = 'transformation_matrix'
-KEY_PIXELS_PER_METER = 'pixels_per_meter'
+KEY_TRANSFORMATION_MATRIX_INV = 'transformation_matrix_inv'
+KEY_PIXEL_PER_METER = 'pixel_per_meter'
 KEY_TRANSFORMATION_SOURCE_POINTS = 'transformation_src_points'
+KEY_TRANSFORMATION_DESTINATION_POINTS = 'transformation_dst_points'
 
 KEY_LIST = [KEY_OBJECT_POINTS, KEY_IMAGE_POINTS, KEY_IMAGE_SIZE, KEY_DISTORTION_COEFFICIENT, KEY_CALIBRATION_MATRIX]
