@@ -1,2 +1,12 @@
 
 __pycache__
+
+test_images/single_image/
+
+advanced_lane_finder/__obsolete/
+
+output_images/calibration/
+
+output_images/playground/
+
+output_images/test/
