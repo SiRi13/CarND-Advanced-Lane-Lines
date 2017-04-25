@@ -65,8 +65,9 @@ if len(window_centroids) > 0:
     # iterate levels and draw windows
     for level in range(len(window_centroids)):
         # draw window areas
-        l_mask = window_mask(window_width, window_height, warped, window_centroids[level][0], level)
-        r_mask = window_mask(window_width, window_height, warped, window_centroids[level][1], level)
+        if level <= 1:
+            l_mask = window_mask(window_width, window_height, warped, window_centroids[level][0], level)
+            r_mask = window_mask(window_width, window_height, warped, window_centroids[level][1], level)
         # add graphic points to masks
         l_pts[(l_pts == 255) | (l_mask == 1)] = 255
         r_pts[(r_pts == 255) | (r_mask == 1)] = 255

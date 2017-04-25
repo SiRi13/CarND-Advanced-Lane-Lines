@@ -99,15 +99,18 @@ plt.ylim(720, 0)
 plt.show()
 
 # %% skip sliding window search for following frames
-next_warped = mpimg.imread('./images/warped_example2.jpg')
+next_warped = mpimg.imread('./images/warped_example.jpg')
 non_zero = next_warped.nonzero()
-non_zero_x = np.array(non_zero[0])
-non_zero_y = np.array(non_zero[1])
-margin = 100
+non_zero_y = np.array(non_zero[0])
+non_zero_x = np.array(non_zero[1])
+margin = 30
 left_lane_indcs = ((non_zero_x > (left_fit[0] * (non_zero_y**2) + left_fit[1] * non_zero_y + left_fit[2] - margin))
                     & (non_zero_x < (left_fit[0] * (non_zero_y**2) + left_fit[1] * non_zero_y + left_fit[2] + margin)))
-right_lane_indcs = ((non_zero_x > (right_fit[0] * (non_zero_y**2) + right_fit[1] * non_zero_y + right_fit[2] - margin))
+np.any(left_lane_indcs)
+
+right_lane_indcs = ((non_zero_x > (right_fit[0] * (non_zero_y**2) + right_fit[1]*non_zero_y + right_fit[2] - margin))
                     & (non_zero_x < (right_fit[0] * (non_zero_y**2) + right_fit[1] * non_zero_y + right_fit[2] + margin)))
+np.any(right_lane_indcs)
 
 # %% extract left/right pixel positions again
 left_x = non_zero_x[left_lane_indcs]
