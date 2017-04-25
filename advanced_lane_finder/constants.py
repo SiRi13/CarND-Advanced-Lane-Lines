@@ -16,6 +16,7 @@ CALIBRATION_IMAGE_FOLDER = './camera_cal/'
 CAL_IMG_EXPORT_NAME='./output_images/calibration_image_{}_{}.png'
 DEFAULT_OUTPUT_IMAGE_FOLDER = './output_images/'
 DEFAULT_INPUT_IMAGE_FOLDER = './test_images/'
+DEFAULT_DEBUG_FOLDER = './debug_images/'
 PROJECT_VIDEO = './project_video.mp4'
 CHALLENGE_VIDEO = './challenge_video.mp4'
 HARDER_CHALLENGE_VIDEO = './harder_challenge_video.mp4'
@@ -33,6 +34,8 @@ LANE_WIDTH_M = 3.7
 """
 keys for settings pickle
 """
+KEY_TIME_STAMP_CALIBRATION = 'time_stamp_calibration'
+KEY_TIME_STAMP_TRANSFORMATION = 'time_stamp_transformation'
 KEY_OBJECT_POINTS = 'opject_points'
 KEY_IMAGE_POINTS = 'image_points'
 KEY_IMAGE_SIZE = 'image_size'

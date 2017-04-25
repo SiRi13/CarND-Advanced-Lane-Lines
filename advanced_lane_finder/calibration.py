@@ -1,16 +1,20 @@
 import os
 import cv2
 import glob
+import time
 import pickle
 import matplotlib.image as mpimg
 import numpy as np
 
-import advanced_lane_finder.alf_constants as consts
+from advanced_lane_finder.abstract import AbstractBaseClass
+import advanced_lane_finder.constants as consts
 
-class CameraCalibration:
-    def __init__(self, import_folder=consts.CALIBRATION_IMAGE_FOLDER,
-                 import_files=consts.CALIBRATION_IMAGE_TEMPLATE, export=False):
-        self.export_calibrated = export
+class CameraCalibration(AbstractBaseClass):
+
+    def __init__(self, debug_folder, settings, verbose=False, export=False,
+                 import_folder=consts.CALIBRATION_IMAGE_FOLDER,
+                 import_files=consts.CALIBRATION_IMAGE_TEMPLATE):
+        AbstractBaseClass.__init__(self, debug_folder, settings, verbose, export)
         self.import_folder = import_folder
         self.import_files = import_files
 
@@ -48,7 +52,7 @@ class CameraCalibration:
             # if corners found
             if ret == True:
                 # for debuggin & writeup
-                if self.export_calibrated:
+                if self.export_images:
                     cv2.drawChessboardCorners(img, obj_point, corners, ret)
                     mpimg.imsave(consts.CAL_IMG_EXPORT_NAME.format('chessboard_corners',idx), img, format='png')
 
@@ -56,7 +60,7 @@ class CameraCalibration:
                 corners = cv2.cornerSubPix(gray, corners, win_size, zero_zone, criteria)
 
                 # for debuggin & writeup
-                if self.export_calibrated:
+                if self.export_images:
                     cv2.drawChessboardCorners(img, obj_point, corners, ret)
                     mpimg.imsave(consts.CAL_IMG_EXPORT_NAME.format('chessboard_corners_refined',idx), img, format='png')
 
@@ -72,7 +76,7 @@ class CameraCalibration:
         self.distortion_coefficient = dist
         self.image_size = img.shape
 
-        if self.export_calibrated:
+        if self.export_images:
             for idx, img in enumerate(self.calibration_images):
                 destination = cv2.undistort(img, mtx, dist)
                 mpimg.imsave(consts.CAL_IMG_EXPORT_NAME.format('undistorted', idx), destination, format='png')
@@ -95,6 +99,7 @@ class CameraCalibration:
 
             if do_save:
                 with open(settings_pickle_path, 'wb') as f:
+                    pickle_dict[consts.KEY_TIME_STAMP_CALIBRATION] = time.ctime()
                     pickle_dict[consts.KEY_OBJECT_POINTS] = self.object_points
                     pickle_dict[consts.KEY_IMAGE_POINTS] = self.image_points
                     pickle_dict[consts.KEY_DISTORTION_COEFFICIENT] = self.distortion_coefficient

@@ -1,12 +1,11 @@
 import os
+import time
 import pickle
 import argparse
-import advanced_lane_finder.alf_constants as consts
-from advanced_lane_finder.alf_calibration import CameraCalibration
-from advanced_lane_finder.alf_transformation import ImageTransformation
-
-
-
+import advanced_lane_finder.constants as consts
+from advanced_lane_finder.finder import AdvancedLaneFinder
+from advanced_lane_finder.calibration import CameraCalibration
+from advanced_lane_finder.transformation import ImageTransformation
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='ALF - Advanced Lane Finder')
@@ -57,10 +56,21 @@ if __name__ == "__main__":
         help='activate all outputs'
     )
     parser.add_argument(
+        '--export', '-e',
+        action='store_true',
+        help='save generated images in output folder'
+    )
+    parser.add_argument(
         '--output-folder', '-of',
         type=str,
         default=consts.DEFAULT_OUTPUT_IMAGE_FOLDER,
         help='Path to output folder. Default: [{}]'.format(consts.DEFAULT_OUTPUT_IMAGE_FOLDER)
+    )
+    parser.add_argument(
+        '--debug-folder', '-df',
+        type=str,
+        default=consts.DEFAULT_DEBUG_FOLDER,
+        help='Path to debug folder. Default: [{}]'.format(consts.DEFAULT_DEBUG_FOLDER)
     )
     parser.add_argument(
         '--input-folder', '-if',
@@ -73,7 +83,7 @@ if __name__ == "__main__":
     settings_pickle_path = os.path.join(consts.SETTINGS_FOLDER, consts.SETTINGS_PICKLE)
     if args.init_settings:
         os.makedirs(os.path.dirname(settings_pickle_path), exist_ok=True)
-        settings_pickle = { 'empty': False }
+        settings_pickle = { consts.KEY_TIME_STAMP_CALIBRATION: time.ctime() }
         pickle.dump(settings_pickle, open(settings_pickle_path, mode='wb'))
 
     # load settings
@@ -92,9 +102,15 @@ if __name__ == "__main__":
         print('Provided output folder not found! using default')
         output_folder = consts.DEFAULT_OUTPUT_IMAGE_FOLDER
 
+    if os.path.exists(args.debug_folder):
+        debug_folder = args.debug_folder
+    else:
+        print('Provided debug folder not found! using default')
+        output_folder = consts.DEFAULT_DEBUG_FOLDER
+
     if args.calibrate:
         print("init calibration class")
-        cam_cal = CameraCalibration(export=args.verbosity)
+        cam_cal = CameraCalibration(debug_folder, settings_pickle, export=args.export, verbose=args.verbosity)
         print("start camera calibration")
         cam_cal.calibrate_camera()
         print("save settings")
@@ -102,7 +118,7 @@ if __name__ == "__main__":
 
     elif args.transformation:
         print('init transformation')
-        it = ImageTransformation(settings_pickle, input_folder)
+        it = ImageTransformation(settings_pickle, input_folder, export=args.export, verbose=args.verbosity)
         print('find matrix')
         it.find_transformation_matrix(True)
         print('determine pixel per meter')
@@ -111,20 +127,20 @@ if __name__ == "__main__":
 
     elif args.project:
         print('process project video')
-        alf = AdvancedLaneFinder(settings_pickle, output_folder)
-        alf.process_video(consts.PROJECT_VIDEO)
+        alf = AdvancedLaneFinder(debug_folder=debug_folder, settings=settings_pickle, verbose=args.verbosity, export=args.export)
+        alf.process_video(output_folder, consts.PROJECT_VIDEO)
 
     elif args.challenge:
         print('process challenge video')
-        alf = AdvancedLaneFinder(settings_pickle, output_folder)
-        alf.process_video(consts.CHALLENGE_VIDEO)
+        alf = AdvancedLaneFinder(debug_folder=debug_folder, settings=settings_pickle, verbose=args.verbosity, export=args.export)
+        alf.process_video(output_folder, consts.CHALLENGE_VIDEO)
 
     elif args.harder_challenge:
         print('process harder video')
-        alf = AdvancedLaneFinder(settings_pickle, output_folder)
-        alf.process_video(consts.HARDER_CHALLENGE_VIDEO)
+        alf = AdvancedLaneFinder(debug_folder=debug_folder, settings=settings_pickle, verbose=args.verbosity, export=args.export)
+        alf.process_video(output_folder, consts.HARDER_CHALLENGE_VIDEO)
 
     elif args.test_images:
         print("process test images")
-        alf = AdvancedLaneFinder(settings_pickle, output_folder)
-        alf.test_images(input_folder, args.verbosity)
+        alf = AdvancedLaneFinder(debug_folder=debug_folder, settings=settings_pickle, verbose=args.verbosity, export=args.export)
+        alf.test_images(input_folder, output_folder)

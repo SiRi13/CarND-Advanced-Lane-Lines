@@ -1,18 +1,20 @@
 import os
 import cv2
 import glob
+import time
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
-import advanced_lane_finder.alf_constants as consts
+from advanced_lane_finder.abstract import AbstractBaseClass
+import advanced_lane_finder.constants as consts
 
-class ImageTransformation:
+class ImageTransformation(AbstractBaseClass):
 
-    def __init__(self, settings_pickle, input_folder):
+    def __init__(self, settings_pickle, input_folder, verbose=False, export=False):
+        AbstractBaseClass.__init__(self, consts.DEFAULT_DEBUG_FOLDER, settings_pickle, verbose, export)
         self.input_folder = input_folder
-        self.settings = settings_pickle
         self.cal_M = settings_pickle[consts.KEY_CALIBRATION_MATRIX]
         self.dist = settings_pickle[consts.KEY_DISTORTION_COEFFICIENT]
 
@@ -152,6 +154,7 @@ class ImageTransformation:
         settings_pickle_path = os.path.join(consts.SETTINGS_FOLDER, consts.SETTINGS_PICKLE)
         if os.path.exists(consts.SETTINGS_FOLDER) and do_save:
             with open(settings_pickle_path, 'wb') as f:
+                self.settings[consts.KEY_TIME_STAMP_TRANSFORMATION] = time.ctime()
                 self.settings[consts.KEY_TRANSFORMATION_MATRIX] = self.M
                 self.settings[consts.KEY_TRANSFORMATION_MATRIX_INV] = self.Minv
                 self.settings[consts.KEY_PIXEL_PER_METER] = self.pixel_per_meter
