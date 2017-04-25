@@ -10,3 +10,5 @@ output_images/calibration/
 output_images/playground/
 
 output_images/test/
+
+debug_images/
