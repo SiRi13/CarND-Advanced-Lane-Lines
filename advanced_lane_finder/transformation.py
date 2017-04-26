@@ -98,6 +98,9 @@ class ImageTransformation(AbstractBaseClass):
         d3 = [consts.WARPED_SIZE[0], consts.WARPED_SIZE[1]]
         d4 = [0, consts.WARPED_SIZE[1]]
         self.destination_points = np.array([d1, d2, d3, d4], dtype=np.float32)
+
+        self._debug_msg('src: {}\ndst: {}'.format(self.source_points, self.destination_points))
+
         # generate perspective transformation matrix
         self.M = cv2.getPerspectiveTransform(self.source_points, self.destination_points)
         # and inverse
