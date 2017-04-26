@@ -41,19 +41,32 @@ def get_biggest_contour(contours):
 
 def morphology_transformation(img, total_mask, line_mask, roi_mask, mask):
     # undistort, unwarp, change space, filter
+    img = mpimg.imread('./test_images/test1.jpg')
+    img = mpimg.imread('./test_images/straight_lines1.jpg')
+
     img = undistort(img)
     img = warp(img)
     hls, lab = blur(img)
+    plt.imshow(lab[:, :, 2], cmap='hot')
+
     # get scenery
     noise = (np.uint8(lab[:, :, 2]) > 130) & cv2.inRange(hls, (0, 0, 50), (35, 190, 255))
+    plt.imshow((np.uint8(lab[:, :, 2]) > 130), cmap='gray')
+    plt.imshow(cv2.inRange(hls, (0, 0, 50), (35, 190, 255)), cmap='gray')
+    noise[:, 100:200] = 0
+    plt.imshow(noise, cmap='gray')
+
     # get road
     road_mask = np.uint8(np.logical_not(noise)) & (hls[:, :, 1] < 250)
+    plt.imshow(road_mask, cmap='gray')
     # apply morphEx OPEN on road with 7x7 kernel
     kernel_7_rect = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
     morphEx = cv2.morphologyEx(road_mask, cv2.MORPH_OPEN, kernel_7_rect)
+    plt.imshow(morphEx, cmap='gray')
     # dilate morphed road with 31x31 kernel
-    kernel_31_elli = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (31, 31))
+    kernel_31_elli = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (29, 29))
     dilation = cv2.dilate(morphEx, kernel_31_elli)
+    plt.imshow(dilation, cmap='gray')
     # get contours
     img, contours, hierarchy = cv2.findContours(dilation, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
     # get biggest contour/area
@@ -64,7 +77,7 @@ def morphology_transformation(img, total_mask, line_mask, roi_mask, mask):
     # fill biggest contour on road mask
     road_mask = np.zeros_like(road_mask)
     road_mask = cv2.fillPoly(road_mask, [max_contour],  1)
-    # plt.imshow(road_mask, cmap='gray')
+    plt.imshow(road_mask, cmap='gray')
     # merge line with road
     roi_mask[:, :, 0] = line_mask & road_mask
     roi_mask[:, :, 1] = roi_mask[:, :, 0]
@@ -98,7 +111,8 @@ def morphology_transformation(img, total_mask, line_mask, roi_mask, mask):
 # %% run all test-mages
 for img_path in glob.glob('./test_images/*jpg'):
     # %% load img
-    img = mpimg.imread(img_path)
+    img = mpimg.imread('./test_images/test1.jpg')
+    img = mpimg.imread('./test_images/test1.jpg')
     # plt.imshow(img)
 
     # %% set up masks
