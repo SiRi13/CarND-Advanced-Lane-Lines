@@ -10,6 +10,7 @@ class Frame(AbstractBaseClass):
 
     def __init__(self, *args, **kwargs):
         AbstractBaseClass.__init__(self, *args, **kwargs)
+        self.count = 0
 
         self.image_size = consts.IMAGE_SIZE
         self.warped_size = consts.WARPED_SIZE
@@ -17,6 +18,8 @@ class Frame(AbstractBaseClass):
         self.mask = np.zeros((consts.WARPED_SIZE[1], consts.WARPED_SIZE[0], 3), dtype=np.uint8)
         self.roi_mask = np.ones((consts.WARPED_SIZE[1], consts.WARPED_SIZE[0], 3), dtype=np.uint8)
         self.total_mask = np.zeros((consts.WARPED_SIZE[1], consts.WARPED_SIZE[0], 3), dtype=np.uint8)
+
+        self.radius_history = np.zeros(3, dtype=np.float32)
 
         self.left_line = Line(self.warped_size, -1.8288, *args, **kwargs)
         self.right_line = Line(self.warped_size, 1.8288, *args, **kwargs)
@@ -47,9 +50,31 @@ class Frame(AbstractBaseClass):
         kernel = cv2.getStructuringElement(shape=kernel_shape, ksize=kernel_size)
         return cv2.morphologyEx(img, morph_op, kernel)
 
+    def __get_possible_lines(self, hls):
+        histogram = np.sum(hls[hls.shape[1]//4:,:,2], axis=0)
+
+        if self.verbose:
+            plt.plot(histogram)
+            plt.show()
+
+        midpoint = np.int(histogram.shape[0]/2)
+        leftx_base = np.argmax(histogram[:midpoint])
+        rightx_base = np.argmax(histogram[midpoint:]) + midpoint
+
+        return leftx_base, rightx_base
+
     def __filter_curb(self, img, hls, lab):
         # get curb
         curb_mask = (np.uint8(lab[:, :, 2]) > 130) & cv2.inRange(hls, (0, 0, 50), (35, 190, 255))
+        # spare possible lane line area
+        left_x, right_x = self.__get_possible_lines(hls)
+        curb_mask[:, left_x-10:left_x+10] = 0
+        curb_mask[:, right_x-10:right_x+10] = 0
+
+        if self.verbose:
+            plt.imshow(curb_mask)
+            plt.show()
+
         # get road
         road_mask = np.uint8(np.logical_not(curb_mask)) & (hls[:, :, 1] < 250)
         # apply morphEx OPEN on road with 7x7 kernel
@@ -126,15 +151,18 @@ class Frame(AbstractBaseClass):
         if self.left_line.found and self.right_line.found:
             mean_poly = (self.left_line.poly_fit + self.right_line.poly_fit) / 2.0
             radius_m = self.left_line.calculate_radius_m(mean_poly)
-            off_center_m = self.left_line.get_position_m(mean_poly)
+            off_center_m = self.left_line.calculate_position_m(mean_poly)
 
+            frameNo = 'Frame #{}'.format(self.count)
             radius = 'Radius (m): {:>6.2f}'.format(radius_m)
             off_ctr = 'Position (m): {:>6.2f}'.format(off_center_m)
 
-            cv2.putText(img, radius, (100, 50), cv2.FONT_HERSHEY_PLAIN, fontScale=2.5, thickness=5, color=(0, 0, 0))
-            cv2.putText(img, radius, (100, 50), cv2.FONT_HERSHEY_PLAIN, fontScale=2.5, thickness=4, color=(255, 255, 255))
-            cv2.putText(img, off_ctr, (100, 100), cv2.FONT_HERSHEY_PLAIN, fontScale=2.5, thickness=5, color=(0, 0, 0))
-            cv2.putText(img, off_ctr, (100, 100), cv2.FONT_HERSHEY_PLAIN, fontScale=2.5, thickness=4, color=(255, 255, 255))
+            cv2.putText(img, frameNo, (100, 50), cv2.FONT_HERSHEY_PLAIN, fontScale=2.5, thickness=5, color=(0, 0, 0))
+            cv2.putText(img, frameNo, (100, 50), cv2.FONT_HERSHEY_PLAIN, fontScale=2.5, thickness=4, color=(255, 255, 255))
+            cv2.putText(img, radius, (100, 100), cv2.FONT_HERSHEY_PLAIN, fontScale=2.5, thickness=5, color=(0, 0, 0))
+            cv2.putText(img, radius, (100, 100), cv2.FONT_HERSHEY_PLAIN, fontScale=2.5, thickness=4, color=(255, 255, 255))
+            cv2.putText(img, off_ctr, (100, 150), cv2.FONT_HERSHEY_PLAIN, fontScale=2.5, thickness=5, color=(0, 0, 0))
+            cv2.putText(img, off_ctr, (100, 150), cv2.FONT_HERSHEY_PLAIN, fontScale=2.5, thickness=4, color=(255, 255, 255))
         else:
             cv2.putText(img, "Lane lost!", (550, 170), cv2.FONT_HERSHEY_PLAIN, fontScale=2.5, thickness=5, color=(0, 0, 0))
             cv2.putText(img, "Lane lost!", (550, 170), cv2.FONT_HERSHEY_PLAIN, fontScale=2.5, thickness=4, color=(255, 255, 255))
@@ -147,23 +175,33 @@ class Frame(AbstractBaseClass):
             self.left_line.reset()
             self.right_line.reset()
 
+        self.count += 1
+
         # undistort, unwarp, change space, filter
         img = self.__undistort(frame)
+        self._save_image(img, 'undistorted', self.count)
+
         warped = self.__warp(img)
+        self._save_image(warped, 'warped', self.count)
+
         hls, lab = self.__blur(warped)
+        self._save_image(np.hstack((hls, lab)), 'hls_lab', self.count, color_map='hot')
+
         filtered_img = self.__filter_curb(warped, hls, lab)
+        self._save_image(filtered_img, 'filtered_img', self.count, color_map='gray')
 
         if self.verbose and False:
             print("filtered.shape", filtered_img.shape)
-            plt.imshow(filtered_img, cmap='gray')
+            plt.imshow(filtered_img, cmap='hot')
             plt.title('filtered_img')
             plt.show()
 
         morphed = self.__morphology_transformation(filtered_img, hls, lab)
+        self._save_image(morphed, 'binary', self.count, color_map='gray')
 
         if self.verbose:
             print("morphed.shape ", morphed.shape)
-            plt.imshow(morphed, cmap='gray')
+            plt.imshow(morphed, cmap='hot')
             plt.title('morphed')
             plt.show()
 
@@ -175,11 +213,28 @@ class Frame(AbstractBaseClass):
         if self.left_line.found:
             morphed_r = morphed_r & np.logical_not(self.left_line.line_mask) & self.left_line.mirrored_line_mask
 
+        self._save_image(np.hstack((morphed_l, morphed)), 'morphed_l_r', self.count, color_map='gray')
+
         # search w/ convolutional windows
-        self.left_line.find_lane_line(morphed_l, reset)
-        self.right_line.find_lane_line(morphed_r, reset)
+        self.left_line.search(morphed_l, reset)
+        self.right_line.search(morphed_r, reset)
+
+        if self.left_line.found and not self.right_line.found:
+            morphed_r = morphed_r & self.left_line.mirrored_line_mask
+            self._save_image(morphed_r, 'left_found_right_mirrored', self.count, color_map='gray')
+            self.right_line.search(morphed_r, True)
+            if not self.right_line.found:
+                self.right_line.use_other_line(self.left_line)
+
+        if self.right_line.found and not self.left_line.found:
+            morphed_l = morphed_l & self.right_line.mirrored_line_mask
+            self._save_image(morphed_l, 'right_found_left_mirrored', self.count, color_map='gray')
+            self.left_line.search(morphed_l, True)
+            if not self.left_line.found:
+                self.left_line.use_other_line(self.right_line)
 
         highlighted = self.__highlight_lane(img)
+        self._save_image(highlighted, 'highlighted', self.count)
 
         if self.verbose:
             print("highlighted.shape ", highlighted.shape)
@@ -188,6 +243,7 @@ class Frame(AbstractBaseClass):
             plt.show()
 
         uwarped = self.__warp(highlighted, self.image_size, flags=cv2.WARP_FILL_OUTLIERS+cv2.INTER_CUBIC+cv2.WARP_INVERSE_MAP)
+        self._save_image(uwarped, 'unwarped', self.count)
 
         if self.verbose:
             print("uwarped.shape ", uwarped.shape)
@@ -200,7 +256,7 @@ class Frame(AbstractBaseClass):
 
         if self.verbose:
             print("result.shape ", result.shape)
-            plt.imshow(with_text)
+            plt.imshow(result)
             plt.title('highlighted with text')
             plt.show()
 

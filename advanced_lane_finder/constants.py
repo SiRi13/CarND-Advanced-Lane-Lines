@@ -7,6 +7,18 @@ IMAGE_SIZE = 1280, 720
 WARPED_SIZE = 500, 600
 
 """
+line settings
+"""
+FOUND_THRESHOLD = 4
+HISTORY_SIZE = 7
+NUMBER_OF_WINDOWS = 14
+WINDOW_WIDTH = 30
+MAX_RADIUS_M = 1800
+MIN_RADIUS_M = 25
+MAX_DEVIATION = 0.95
+MIN_Y_COUNT = 150
+
+"""
 path & filename settings
 """
 SETTINGS_FOLDER = './advanced_lane_finder/settings/'
@@ -14,6 +26,7 @@ SETTINGS_PICKLE = 'settings.p'
 CALIBRATION_IMAGE_TEMPLATE = 'calibration*.jpg'
 CALIBRATION_IMAGE_FOLDER = './camera_cal/'
 CAL_IMG_EXPORT_NAME='./output_images/calibration_image_{}_{}.png'
+TEST_IMG_EXPORT_NAME='image_{}_{}.png'
 DEFAULT_OUTPUT_IMAGE_FOLDER = './output_images/'
 DEFAULT_INPUT_IMAGE_FOLDER = './test_images/'
 DEFAULT_DEBUG_FOLDER = './debug_images/'

@@ -52,7 +52,7 @@ class CameraCalibration(AbstractBaseClass):
             # if corners found
             if ret == True:
                 # for debuggin & writeup
-                if self.export_images:
+                if self.export:
                     cv2.drawChessboardCorners(img, obj_point, corners, ret)
                     mpimg.imsave(consts.CAL_IMG_EXPORT_NAME.format('chessboard_corners',idx), img, format='png')
 
@@ -60,7 +60,7 @@ class CameraCalibration(AbstractBaseClass):
                 corners = cv2.cornerSubPix(gray, corners, win_size, zero_zone, criteria)
 
                 # for debuggin & writeup
-                if self.export_images:
+                if self.export:
                     cv2.drawChessboardCorners(img, obj_point, corners, ret)
                     mpimg.imsave(consts.CAL_IMG_EXPORT_NAME.format('chessboard_corners_refined',idx), img, format='png')
 
@@ -76,7 +76,7 @@ class CameraCalibration(AbstractBaseClass):
         self.distortion_coefficient = dist
         self.image_size = img.shape
 
-        if self.export_images:
+        if self.export:
             for idx, img in enumerate(self.calibration_images):
                 destination = cv2.undistort(img, mtx, dist)
                 mpimg.imsave(consts.CAL_IMG_EXPORT_NAME.format('undistorted', idx), destination, format='png')
