@@ -108,6 +108,7 @@ if __name__ == "__main__":
         print('Provided debug folder not found! using default')
         output_folder = consts.DEFAULT_DEBUG_FOLDER
 
+
     if args.calibrate:
         print("init calibration class")
         cam_cal = CameraCalibration(debug_folder, settings_pickle, export=args.export, verbose=args.verbosity)
@@ -125,22 +126,19 @@ if __name__ == "__main__":
         it.get_pixel_per_meter(True)
         it.save_transformation_settings(args.force)
 
-    elif args.project:
+    alf = AdvancedLaneFinder(output_folder, debug_folder, settings_pickle, args.verbosity, args.export)
+    if args.project:
         print('process project video')
-        alf = AdvancedLaneFinder(debug_folder=debug_folder, settings=settings_pickle, verbose=args.verbosity, export=args.export)
-        alf.process_video(output_folder, consts.PROJECT_VIDEO)
+        alf.process_video(consts.PROJECT_VIDEO)
 
     elif args.challenge:
         print('process challenge video')
-        alf = AdvancedLaneFinder(debug_folder=debug_folder, settings=settings_pickle, verbose=args.verbosity, export=args.export)
-        alf.process_video(output_folder, consts.CHALLENGE_VIDEO)
+        alf.process_video(consts.CHALLENGE_VIDEO)
 
     elif args.harder_challenge:
         print('process harder video')
-        alf = AdvancedLaneFinder(debug_folder=debug_folder, settings=settings_pickle, verbose=args.verbosity, export=args.export)
-        alf.process_video(output_folder, consts.HARDER_CHALLENGE_VIDEO)
+        alf.process_video(consts.HARDER_CHALLENGE_VIDEO)
 
     elif args.test_images:
         print("process test images")
-        alf = AdvancedLaneFinder(debug_folder=debug_folder, settings=settings_pickle, verbose=args.verbosity, export=args.export)
-        alf.test_images(input_folder, output_folder)
+        alf.test_images(input_folder)
