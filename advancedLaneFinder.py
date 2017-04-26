@@ -111,7 +111,7 @@ if __name__ == "__main__":
 
     if args.calibrate:
         print("init calibration class")
-        cam_cal = CameraCalibration(debug_folder, settings_pickle, export=args.export, verbose=args.verbosity)
+        cam_cal = CameraCalibration(consts.CALIBRATION_IMAGE_FOLDER, consts.CALIBRATION_IMAGE_TEMPLATE, output_folder, debug_folder, settings_pickle, args.verbosity, args.export)
         print("start camera calibration")
         cam_cal.calibrate_camera()
         print("save settings")
@@ -119,11 +119,11 @@ if __name__ == "__main__":
 
     elif args.transformation:
         print('init transformation')
-        it = ImageTransformation(settings_pickle, input_folder, export=args.export, verbose=args.verbosity)
+        it = ImageTransformation(input_folder, output_folder, debug_folder, settings_pickle, args.verbosity, args.export)
         print('find matrix')
-        it.find_transformation_matrix(True)
+        it.find_transformation_matrix()
         print('determine pixel per meter')
-        it.get_pixel_per_meter(True)
+        it.get_pixel_per_meter()
         it.save_transformation_settings(args.force)
 
     alf = AdvancedLaneFinder(output_folder, debug_folder, settings_pickle, args.verbosity, args.export)

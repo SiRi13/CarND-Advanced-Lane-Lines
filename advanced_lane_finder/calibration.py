@@ -4,6 +4,7 @@ import glob
 import time
 import pickle
 import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
 import numpy as np
 
 from advanced_lane_finder.abstract import AbstractBaseClass
@@ -11,10 +12,9 @@ import advanced_lane_finder.constants as consts
 
 class CameraCalibration(AbstractBaseClass):
 
-    def __init__(self, debug_folder, settings, verbose=False, export=False,
-                 import_folder=consts.CALIBRATION_IMAGE_FOLDER,
-                 import_files=consts.CALIBRATION_IMAGE_TEMPLATE):
-        AbstractBaseClass.__init__(self, debug_folder, settings, verbose, export)
+    def __init__(self, import_folder, import_files, output_folder, *args, **kwargs):
+        AbstractBaseClass.__init__(self, *args, **kwargs)
+        self.output_folder = output_folder
         self.import_folder = import_folder
         self.import_files = import_files
 
@@ -26,6 +26,7 @@ class CameraCalibration(AbstractBaseClass):
         self.calibration_images = list()
         self.object_points = list()
         self.image_points = list()
+        self.path_template = os.path.join(self.output_folder, consts.CAL_IMG_EXPORT_NAME)
 
     def __load_calibration_images(self):
         if os.path.exists(self.import_folder):
@@ -52,17 +53,17 @@ class CameraCalibration(AbstractBaseClass):
             # if corners found
             if ret == True:
                 # for debuggin & writeup
-                if self.export:
+                if self.export and self.verbose:
                     cv2.drawChessboardCorners(img, obj_point, corners, ret)
-                    mpimg.imsave(consts.CAL_IMG_EXPORT_NAME.format('chessboard_corners',idx), img, format='png')
+                    mpimg.imsave(self.path_template.format('chessboard_corners',idx), img, format='png')
 
                 # refine corner positions
                 corners = cv2.cornerSubPix(gray, corners, win_size, zero_zone, criteria)
 
                 # for debuggin & writeup
-                if self.export:
+                if self.export and self.verbose:
                     cv2.drawChessboardCorners(img, obj_point, corners, ret)
-                    mpimg.imsave(consts.CAL_IMG_EXPORT_NAME.format('chessboard_corners_refined',idx), img, format='png')
+                    mpimg.imsave(self.path_template.format('chessboard_corners_refined',idx), img, format='png')
 
                 # append to lists
                 self.object_points.append(obj_pt_template)
@@ -79,7 +80,14 @@ class CameraCalibration(AbstractBaseClass):
         if self.export:
             for idx, img in enumerate(self.calibration_images):
                 destination = cv2.undistort(img, mtx, dist)
-                mpimg.imsave(consts.CAL_IMG_EXPORT_NAME.format('undistorted', idx), destination, format='png')
+                plt.figure(figsize=(15, 10))
+                plt.subplot(121)
+                plt.imshow(img)
+                plt.title('Original Calibration Image')
+                plt.subplot(122)
+                plt.imshow(destination)
+                plt.title('Undistorted Calibration Image')
+                plt.savefig(self.path_template.format('undistorted', idx), format='png')
                 del idx, img, destination
 
 

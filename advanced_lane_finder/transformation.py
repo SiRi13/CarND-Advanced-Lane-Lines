@@ -12,11 +12,13 @@ import advanced_lane_finder.constants as consts
 
 class ImageTransformation(AbstractBaseClass):
 
-    def __init__(self, settings_pickle, input_folder, verbose=False, export=False):
-        AbstractBaseClass.__init__(self, consts.DEFAULT_DEBUG_FOLDER, settings_pickle, verbose, export)
+    def __init__(self, input_folder, output_folder, *args, **kwargs):
+        AbstractBaseClass.__init__(self, *args, **kwargs)
         self.input_folder = input_folder
-        self.cal_M = settings_pickle[consts.KEY_CALIBRATION_MATRIX]
-        self.dist = settings_pickle[consts.KEY_DISTORTION_COEFFICIENT]
+        self.output_folder = output_folder
+
+        self.cal_M = self.settings[consts.KEY_CALIBRATION_MATRIX]
+        self.dist = self.settings[consts.KEY_DISTORTION_COEFFICIENT]
 
         self.__init_values()
         self.__load_images()
@@ -24,6 +26,7 @@ class ImageTransformation(AbstractBaseClass):
     def __init_values(self):
         self.images = list()
         self.image_paths = list()
+        self.path_template = os.path.join(self.output_folder, consts.TEST_IMG_EXPORT_NAME)
 
     def __load_images(self):
         if os.path.exists(self.input_folder):
@@ -34,7 +37,7 @@ class ImageTransformation(AbstractBaseClass):
     def __point_on_line(self, p1, p2, y):
         return [p1[0] + (p2[0] - p1[0]) / float(p2[1] - p1[1]) * (y - p1[1]), y]
 
-    def __calculate_line_intercept(self, verbosity):
+    def __calculate_line_intercept(self):
         roi_points = np.array([[0, consts.IMAGE_SIZE[1] - 50], [consts.IMAGE_SIZE[0], consts.IMAGE_SIZE[1] - 50],
                                 [consts.IMAGE_SIZE[0] // 2, consts.IMAGE_SIZE[1] // 2 + 50]], dtype=np.int32)
         roi = np.zeros((consts.IMAGE_SIZE[1], consts.IMAGE_SIZE[0]), dtype=np.uint8)
@@ -45,7 +48,7 @@ class ImageTransformation(AbstractBaseClass):
         Rhs = np.zeros((2, 1), dtype=np.float32)
 
         # iterate images
-        for img in self.images:
+        for idx, img in enumerate(self.images):
             # undistort
             undistorted = cv2.undistort(np.copy(img), self.cal_M, self.dist)
             # convert to HLS space
@@ -66,16 +69,19 @@ class ImageTransformation(AbstractBaseClass):
                     Rhs += np.matmul(outer, point)
                     cv2.line(img, (x1, y1), (x2, y2), (255, 0, 0), thickness=2)
 
-            if verbosity:
+            if self.verbose:
                 plt.imshow(img)
+                if self.export:
+                    plt.savefig(self.path_template.format('line_intercept', idx), format='png')
                 plt.show()
+
 
         # calculate point where lane lines intercept
         v_point = np.matmul(np.linalg.inv(Lhs), Rhs)
         return v_point
 
-    def find_transformation_matrix(self, verbosity=True):
-        v_point = self.__calculate_line_intercept(verbosity)
+    def find_transformation_matrix(self):
+        v_point = self.__calculate_line_intercept()
         # create points
         top = v_point[1] + 60
         bottom = consts.IMAGE_SIZE[1] - 40
@@ -97,7 +103,7 @@ class ImageTransformation(AbstractBaseClass):
         # and inverse
         self.Minv = cv2.getPerspectiveTransform(self.destination_points, self.source_points)
 
-        if verbosity:
+        if self.verbose:
             img1 = np.copy(self.images[0])
             img1 = cv2.polylines(img1, [np.int32(self.source_points)], True, (0, 0, 255), thickness=4)
             img1 = cv2.polylines(img1, [np.int32(self.destination_points)], True, (0, 255, 0), thickness=4)
@@ -108,12 +114,14 @@ class ImageTransformation(AbstractBaseClass):
             # img2 = cv2.circle(img2, v_point, 5, (255, 0, 0), thickness=-1)
             test_output = np.hstack((img1, img2))
             plt.imshow(test_output)
+            if self.export:
+                plt.savefig(self.path_template.format('all_lines_imgs', 0), format='png')
             plt.show()
 
         return self.M, self.Minv
 
-    def get_pixel_per_meter(self, verbose=True):
-        if verbose:
+    def get_pixel_per_meter(self):
+        if self.verbose:
             debug_imgs = list()
 
         min_distance = consts.DEFAULT_LANE_LINES_DISTANCE_PX
@@ -131,7 +139,7 @@ class ImageTransformation(AbstractBaseClass):
             cv2.line(warped, (int(x1), 0), (int(x1), consts.WARPED_SIZE[1]), (255, 0, 0), 3)
             cv2.line(warped, (int(x2), 0), (int(x2), consts.WARPED_SIZE[1]), (0, 255, 0), 3)
 
-            if verbose:
+            if self.verbose:
                 debug_imgs.append(warped)
 
             if ((x2-x1) < min_distance):
@@ -143,15 +151,17 @@ class ImageTransformation(AbstractBaseClass):
 
         self.pixel_per_meter = px_per_m_x, px_per_m_y
 
-        if verbose:
-            print("Pixel per meter (x/y): ", self.pixel_per_meter)
+        if self.verbose:
+            self._debug_msg("Pixel per meter (x/y): {}".format(self.pixel_per_meter))
             plt.imshow(np.hstack(tuple(debug_imgs)))
+            if self.export:
+                plt.savefig(self.path_template.format('pixel_meter', 0), format='png')
             plt.show()
 
         return self.pixel_per_meter
 
     def save_transformation_settings(self, do_save):
-        settings_pickle_path = os.path.join(consts.SETTINGS_FOLDER, consts.SETTINGS_PICKLE)
+        self.settings_path = os.path.join(consts.SETTINGS_FOLDER, consts.SETTINGS_PICKLE)
         if os.path.exists(consts.SETTINGS_FOLDER) and do_save:
             with open(settings_pickle_path, 'wb') as f:
                 self.settings[consts.KEY_TIME_STAMP_TRANSFORMATION] = time.ctime()
@@ -160,5 +170,5 @@ class ImageTransformation(AbstractBaseClass):
                 self.settings[consts.KEY_PIXEL_PER_METER] = self.pixel_per_meter
                 self.settings[consts.KEY_TRANSFORMATION_SOURCE_POINTS] = self.source_points
                 self.settings[consts.KEY_TRANSFORMATION_DESTINATION_POINTS] = self.destination_points
-                print('save settings')
+                self._debug_msg('save settings')
                 pickle.dump(self.settings, f)
