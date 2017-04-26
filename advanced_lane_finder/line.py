@@ -162,12 +162,12 @@ class Line(AbstractBaseClass):
         x = x.astype(np.float32) / self.pixel_per_meter[0]
         new_poly, v = np.polyfit(y, x, 2, rcond=1e-16, cov=True)
         self.deviation = 1 - math.exp(-5*np.sqrt(np.trace(v)))
-        self._debug_msg('other line poly: {}'.format())
+        self._debug_msg('other line poly: {}'.format(new_poly))
         self.history = np.roll(self.history, 1)
         self.history[:, 0] = new_poly
         self.__positive()
         self.poly_fit = np.mean(self.history, axis=1)
-        self._debug_msg('new mean poly: {:>6.2f}'.format(self.poly_fit))
+        self._debug_msg('new mean poly: {}'.format(self.poly_fit))
 
     def calculate_radius_m(self, poly):
         warped_y_m = self.warped_size[1] / self.pixel_per_meter[1]
