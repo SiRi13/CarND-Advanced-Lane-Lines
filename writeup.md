@@ -14,7 +14,7 @@ The goals / steps of this project are the following:
 
 To meet the specifications and pass this project successfully, all [Rubric Points](https://review.udacity.com/#!/rubrics/571/view) have to be addressed.
 
-[chessboard_undistorted]: ./output_images/calibration/calibration_image_undistorted_16.png "Undistorted"
+[chessboard_undistorted]: ./output_images/calibration/calibration_image_undistorted_17.png "Undistorted"
 [street_undistorted]: ./output_images/writeup/image_undistorted_6.png "Road Undistorted"
 [transformation_areas]: ./output_images/transformation/image_all_lines_imgs_0.png "Transformation Areas"
 [pixel_meter]: ./output_images/transformation/image_pixel_meter_0.png "Pixel per Meter"
